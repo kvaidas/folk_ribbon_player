@@ -3,21 +3,29 @@ import numpy
 import time
 import mido
 
+# Image settings
 camera = cv2.VideoCapture(0)
 capture_interval = 0
 resize_multiplier = .05
 brightness_threshold = 180
+
+# Note settings
+note_min = 40
+note_max = 100
 delta_note = 12
 note_multiplier = 4
+
+# MIDI settings
 controller_delta = 64
 attrib_coef = (127 - controller_delta) / brightness_threshold
-debug = False
-old_notes = {}
-
 lfo_id = 26
 cutoff_id = 43
 lfo_coef = 2
 lfo_speed_id = 24
+
+# Other settings
+debug = False
+old_notes = {}
 
 port = mido.open_output(
     mido.get_output_names()[0]
@@ -30,18 +38,22 @@ def process_notes(new_notes):
         print(new_notes.keys())
       
         for note, colors in new_notes.items():
+            note_normalized = note_min + (note / image.shape[1]) * (note_max - note_min)
             note = note * note_multiplier + delta_note
+
             message = mido.Message('note_on', channel=1, note=note, velocity=127)
             port.send(message)
-            # message = mido.Message('sysex', data=[1, 2, 3])
+
             controller_value = int(colors[0] * attrib_coef) + controller_delta
             current_control = cutoff_id
             message = mido.Message('control_change', channel=1, control=current_control, value=controller_value)
             port.send(message)
+
             controller_value = int(colors[1] * attrib_coef) + controller_delta
             controller_value = int(controller_value/lfo_coef)
             message = mido.Message('control_change', channel=1, control=lfo_id, value=controller_value)
             port.send(message)
+
             controller_value = int(colors[2] * attrib_coef) + controller_delta
             controller_value = int(controller_value)
             message = mido.Message('control_change', channel=1, control=lfo_id, value=controller_value)
