@@ -14,6 +14,7 @@ note_min = 40
 note_max = 100
 delta_note = 12
 note_multiplier = 4
+note_repetition_threshold = 1
 
 # MIDI settings
 controller_delta = 64
@@ -26,7 +27,9 @@ lfo_speed_id = 24
 # Other settings
 debug = False
 old_notes = {}
+note_counter={}
 
+    
 midi_devices = mido.get_output_names()
 if len(midi_devices) == 1:
     midi_device = midi_devices[0]
@@ -41,16 +44,29 @@ port = mido.open_output(midi_device)
 
 def process_notes(new_notes):
     global old_notes
-    if old_notes.keys() != new_notes.keys():
-        print(new_notes.keys())
+    #if old_notes.keys() != new_notes.keys():
+    print(new_notes.keys())
       
-        for note, colors in new_notes.items():
+    for note, colors in new_notes.items():
+
+        
+
+        if note_counter.get(note) is None:
+            note_counter[note] = 0
+            
+        note_counter[note]=note_counter[note]+1;
+        if note_counter[note]<=note_repetition_threshold:
+            continue;
+        
+        note_counter[note]=0
+        if (note not in old_notes):
             note_normalized = int(
                 note_min + (note / image.shape[1]) * (note_max - note_min)
             )
-            note = note * note_multiplier + delta_note
+            # note = note * note_multiplier + delta_note
 
             note = note_normalized
+            print(note)
             message = mido.Message('note_on', channel=1, note=note, velocity=127)
             port.send(message)
 
@@ -69,13 +85,13 @@ def process_notes(new_notes):
             message = mido.Message('control_change', channel=1, control=lfo_id, value=controller_value)
             port.send(message)
 
-        time.sleep(0.150)
+    time.sleep(0.150)
 
-        for note, colors in new_notes.items():
-            message = mido.Message('note_off', channel=1, note=note, velocity=127)
-            port.send(message)
-        old_notes = new_notes
-
+    for note, colors in new_notes.items():
+        message = mido.Message('note_off', channel=1, note=note, velocity=127)
+        port.send(message)
+            
+    old_notes = new_notes
 
 while True:
     # Capture image
@@ -116,3 +132,4 @@ while True:
 
 # cv2.imshow('test',image)
 # cv2.waitKey(0)
+
