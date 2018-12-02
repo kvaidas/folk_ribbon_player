@@ -27,9 +27,16 @@ lfo_speed_id = 24
 debug = False
 old_notes = {}
 
-port = mido.open_output(
-    mido.get_output_names()[0]
-)
+midi_devices = mido.get_output_names()
+if len(midi_devices) == 1:
+    midi_device = midi_devices[0]
+else:
+    device_number = int(
+        input('Available MIDI output devices: ' + midi_devices)
+    )
+    midi_device = midi_devices[device_number]
+print('Using MIDI device "' + midi_device + '"')
+port = mido.open_output(midi_device)
 
 
 def process_notes(new_notes):
@@ -38,7 +45,7 @@ def process_notes(new_notes):
         print(new_notes.keys())
       
         for note, colors in new_notes.items():
-            note_normalized = int (
+            note_normalized = int(
                 note_min + (note / image.shape[1]) * (note_max - note_min)
             )
             note = note * note_multiplier + delta_note
