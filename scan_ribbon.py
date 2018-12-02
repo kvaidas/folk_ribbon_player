@@ -38,9 +38,12 @@ def process_notes(new_notes):
         print(new_notes.keys())
       
         for note, colors in new_notes.items():
-            note_normalized = note_min + (note / image.shape[1]) * (note_max - note_min)
+            note_normalized = int (
+                note_min + (note / image.shape[1]) * (note_max - note_min)
+            )
             note = note * note_multiplier + delta_note
 
+            note = note_normalized
             message = mido.Message('note_on', channel=1, note=note, velocity=127)
             port.send(message)
 
@@ -62,7 +65,6 @@ def process_notes(new_notes):
         time.sleep(0.150)
 
         for note, colors in new_notes.items():
-            note = note * note_multiplier + delta_note
             message = mido.Message('note_off', channel=1, note=note, velocity=127)
             port.send(message)
         old_notes = new_notes
