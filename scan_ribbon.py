@@ -1,12 +1,14 @@
 import cv2
 import numpy
 import time
+from matplotlib import pyplot as plt
 import mido
 
 # Image settings
 camera = cv2.VideoCapture(1)
 capture_interval = 0
-resize_multiplier = .05
+#resize_multiplier = .05
+resize_multiplier = 0.2
 brightness_threshold = 180
 
 # Note settings
@@ -44,6 +46,16 @@ else:
 print('Using MIDI device "' + midi_device + '"')
 port = mido.open_output(midi_device)
 
+
+def show_rgb_equalized(image):
+    channels = cv2.split(image)
+    eq_channels = []
+    for ch, color in zip(channels, ['B', 'G', 'R']):
+        eq_channels.append(cv2.equalizeHist(ch))
+
+    eq_image = cv2.merge(eq_channels)
+    eq_image = cv2.cvtColor(eq_image, cv2.COLOR_BGR2RGB)
+    return eq_image
 
 def process_notes(new_notes):
     global old_notes
@@ -91,8 +103,9 @@ def process_notes(new_notes):
     time.sleep(0.150)
 
     for note, colors in new_notes.items():
-        message = mido.Message('note_off', channel=1, note=note, velocity=127)
-        port.send(message)
+        if 0 <= note <= 127:
+            message = mido.Message('note_off', channel=1, note=note, velocity=127)
+            port.send(message)
             
     old_notes = new_notes
 
@@ -111,14 +124,32 @@ while True:
     if debug:
         cv2.imwrite('image02_resized.png', image)
 
-    # Get a single pixel strip from the image
-    image = numpy.array([image[0]])
+    # Get a few pixel strips from the image for display on a screen
+    image_part = []
+    for i in range(1,10):
+        image_part.append(image[i])
+#    image = numpy.array([image[0]])
+
+    
+    # Normalize lighting
+    image = numpy.array(image_part)
+    image = show_rgb_equalized(image)
+
     if debug:
         cv2.imwrite('image03_slice.png', image)
 
     # Display image
-    cv2.imshow('image',image)
+#    cv2.imshow('image',image)
+#    cv2.waitKey(1)
+    
+    # Full screen
+    cv2.namedWindow("window", cv2.WND_PROP_FULLSCREEN)
+    cv2.setWindowProperty("window",cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
+    cv2.imshow("window", image)
     cv2.waitKey(1)
+
+    # Get a single row
+    image = numpy.array([image[0]])
 
     # Print strip as numbers
     notes_detected = {}
