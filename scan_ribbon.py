@@ -4,7 +4,7 @@ import time
 import mido
 
 # Image settings
-camera = cv2.VideoCapture(0)
+camera = cv2.VideoCapture(1)
 capture_interval = 0
 resize_multiplier = .05
 brightness_threshold = 180
@@ -34,8 +34,11 @@ midi_devices = mido.get_output_names()
 if len(midi_devices) == 1:
     midi_device = midi_devices[0]
 else:
+    print('Available MIDI output devices:')
+    for item in midi_devices:
+        print(midi_devices.index(item), item)
     device_number = int(
-        input('Available MIDI output devices: ' + midi_devices)
+        input('Select MIDI output device: ')
     )
     midi_device = midi_devices[device_number]
 print('Using MIDI device "' + midi_device + '"')
