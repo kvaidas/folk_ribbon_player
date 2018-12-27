@@ -10,6 +10,9 @@ capture_interval = 0
 #resize_multiplier = .05
 resize_multiplier = 0.2
 brightness_threshold = 180
+skip_img_left = 25 # Ignore left side of image in percents
+skip_img_right = 25 # Ignore right side of image in percents
+max_display_rows = 10 # Maximum number of ribbon rows to display in pixels
 
 # Note settings
 note_min = 40
@@ -54,7 +57,8 @@ def show_rgb_equalized(image):
         eq_channels.append(cv2.equalizeHist(ch))
 
     eq_image = cv2.merge(eq_channels)
-    eq_image = cv2.cvtColor(eq_image, cv2.COLOR_BGR2RGB)
+    # eq_image = cv2.cvtColor(eq_image, cv2.COLOR_BGR2RGB)
+    #return image
     return eq_image
 
 def process_notes(new_notes):
@@ -126,7 +130,7 @@ while True:
 
     # Get a few pixel strips from the image for display on a screen
     image_part = []
-    for i in range(1,10):
+    for i in range(1,max_display_rows):
         image_part.append(image[i])
 #    image = numpy.array([image[0]])
 
@@ -142,6 +146,18 @@ while True:
 #    cv2.imshow('image',image)
 #    cv2.waitKey(1)
     
+
+    hor_width = len(image[0])
+    min_x = int(hor_width * skip_img_left / 100)
+    max_x = int(hor_width - hor_width * skip_img_right / 100)
+    
+    # Show red rulers - notes are detected only between them
+    image[0:max_display_rows, min_x] = (0,0,255)
+    image[0:max_display_rows, max_x] = (0,0,255)
+    
+    # Highlight the line below the reading line
+    image[1, 0:hor_width] = (0,255,0)
+
     # Full screen
     cv2.namedWindow("window", cv2.WND_PROP_FULLSCREEN)
     cv2.setWindowProperty("window",cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
@@ -153,8 +169,10 @@ while True:
 
     # Print strip as numbers
     notes_detected = {}
-    for number, colors in enumerate(image[0]):
-        if image[0][number][0] < brightness_threshold and \
+    for number, colors in enumerate(image[0]): 
+        if number >= min_x and \
+           number <= max_x and \
+           image[0][number][0] < brightness_threshold and \
            image[0][number][1] < brightness_threshold and \
            image[0][number][2] < brightness_threshold:
             notes_detected[number] = (
