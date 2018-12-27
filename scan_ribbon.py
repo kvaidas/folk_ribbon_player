@@ -116,6 +116,10 @@ while True:
     if debug:
         cv2.imwrite('image03_slice.png', image)
 
+    # Display image
+    cv2.imshow('image',image)
+    cv2.waitKey(1)
+
     # Print strip as numbers
     notes_detected = {}
     for number, colors in enumerate(image[0]):
